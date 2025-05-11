@@ -506,27 +506,43 @@ def format_markdown(text):
     """Format WhatsApp markdown to HTML."""
     if not text:
         return ""
+    
+    # First split the text by newlines
+    paragraphs = text.split('\n')
+    
+    # Process each paragraph for markdown formatting
+    formatted_paragraphs = []
+    for paragraph in paragraphs:
+        if paragraph.strip() == "":
+            # Keep empty paragraphs to preserve spacing
+            formatted_paragraphs.append("&nbsp;")
+            continue
+            
+        # Bold: *text*
+        paragraph = re.sub(r'\*(.*?)\*', r'<strong>\1</strong>', paragraph)
         
-    # Bold: *text*
-    text = re.sub(r'\*(.*?)\*', r'<strong>\1</strong>', text)
+        # Italic: _text_
+        paragraph = re.sub(r'_(.*?)_', r'<em>\1</em>', paragraph)
+        
+        # Strikethrough: ~text~
+        paragraph = re.sub(r'~(.*?)~', r'<del>\1</del>', paragraph)
+        
+        # Monospace: ```text```
+        paragraph = re.sub(r'```(.*?)```', r'<code>\1</code>', paragraph)
+        
+        # Handle URLs
+        url_pattern = r'(https?://[^\s]+)'
+        paragraph = re.sub(url_pattern, r'<a href="\1" target="_blank">\1</a>', paragraph)
+        
+        formatted_paragraphs.append(paragraph)
     
-    # Italic: _text_
-    text = re.sub(r'_(.*?)_', r'<em>\1</em>', text)
+    # Join all paragraphs with line breaks and spacing
+    result = '<p>' + '</p><p>'.join(formatted_paragraphs) + '</p>'
     
-    # Strikethrough: ~text~
-    text = re.sub(r'~(.*?)~', r'<del>\1</del>', text)
+    # Clean up any consecutive empty paragraphs
+    result = re.sub(r'<p>&nbsp;</p>\s*<p>&nbsp;</p>', r'<p>&nbsp;</p>', result)
     
-    # Monospace: ```text```
-    text = re.sub(r'```(.*?)```', r'<code>\1</code>', text)
-    
-    # Handle URLs
-    url_pattern = r'(https?://[^\s]+)'
-    text = re.sub(url_pattern, r'<a href="\1" target="_blank">\1</a>', text)
-    
-    # Convert newlines to <br>
-    text = text.replace('\n', '<br>')
-    
-    return text
+    return result
 
 def generate_html(messages, media_files, output_file):
     """Generate HTML file from parsed messages and media files."""
@@ -932,6 +948,19 @@ def generate_html(messages, media_files, output_file):
             position: relative;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
             word-wrap: break-word;
+        }
+        
+        .message .content {
+            word-wrap: break-word;
+        }
+        
+        .message .content p {
+            margin: 0 0 16px 0;
+            min-height: 1em;
+        }
+        
+        .message .content p:last-child {
+            margin-bottom: 0;
         }
         
         .sent {
